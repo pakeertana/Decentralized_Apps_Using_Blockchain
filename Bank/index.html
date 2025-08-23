@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Virtual Banking DApp</title>
+  <script src="https://cdn.jsdelivr.net/npm/web3@latest/dist/web3.min.js"></script>
+</head>
+<body>
+  <h2>Virtual Banking DApp</h2>
+
+  <button onclick="connectWallet()">Connect Wallet</button>
+  <p id="walletAddress"></p>
+
+  <h3>Deposit</h3>
+  <input type="number" id="depositAmount" placeholder="Amount">
+  <button onclick="deposit()">Deposit</button>
+
+  <h3>Withdraw</h3>
+  <input type="number" id="withdrawAmount" placeholder="Amount">
+  <button onclick="withdraw()">Withdraw</button>
+
+  <h3>Balance</h3>
+  <button onclick="getBalance()">Check Balance</button>
+  <p id="balance"></p>
+
+  <h3>Transaction Log</h3>
+  <ul id="log"></ul>
+
+  <script>
+    let web3;
+    let contract;
+    const contractAddress = "0x9fa8ab7284C177590ddb46b63119cA60573999d5";
+    const abi = [
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "amount",
+				"type": "uint256"
+			}
+		],
+		"name": "deposit",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "user",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "amount",
+				"type": "uint256"
+			}
+		],
+		"name": "Deposit",
+		"type": "event"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "amount",
+				"type": "uint256"
+			}
+		],
+		"name": "withdraw",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "user",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "amount",
+				"type": "uint256"
+			}
+		],
+		"name": "Withdrawal",
+		"type": "event"
+	},
+	{
+		"inputs": [],
+		"name": "getBalance",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	}
+];
+
+    async function connectWallet() {
+      if (window.ethereum) {
+        await ethereum.request({ method: 'eth_requestAccounts' });
+        web3 = new Web3(window.ethereum);
+        const accounts = await web3.eth.getAccounts();
+        document.getElementById("walletAddress").innerText = "Connected: " + accounts[0];
+        contract = new web3.eth.Contract(abi, contractAddress);
+      } else {
+        alert("Please install MetaMask!");
+      }
+    }
+
+    async function deposit() {
+      const amount = parseInt(document.getElementById("depositAmount").value);
+      const accounts = await web3.eth.getAccounts();
+      await contract.methods.deposit(amount).send({ from: accounts[0] });
+      log("Deposited " + amount + " units");
+    }
+
+    async function withdraw() {
+      const amount = parseInt(document.getElementById("withdrawAmount").value);
+      const accounts = await web3.eth.getAccounts();
+      await contract.methods.withdraw(amount).send({ from: accounts[0] });
+      log("Withdrew " + amount + " units");
+    }
+
+    async function getBalance() {
+      const accounts = await web3.eth.getAccounts();
+      const balance = await contract.methods.getBalance().call({ from: accounts[0] });
+      document.getElementById("balance").innerText = "Balance: " + balance + " units";
+    }
+
+    function log(message) {
+      const logList = document.getElementById("log");
+      const entry = document.createElement("li");
+      entry.innerText = message;
+      logList.appendChild(entry);
+    }
+  </script>
+</body>
+</html>
