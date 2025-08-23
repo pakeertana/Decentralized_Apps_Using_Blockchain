@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Property Marketplace</title>
+  <script src="https://cdn.jsdelivr.net/npm/web3@latest/dist/web3.min.js"></script>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f4f6f8;
+      margin: 0;
+      padding: 20px;
+      color: #333;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: auto;
+      background: #fff;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+
+    h2 {
+      text-align: center;
+      color: #2c3e50;
+    }
+
+    .section {
+      margin-bottom: 30px;
+    }
+
+    input, button {
+      padding: 10px;
+      margin: 5px 0;
+      width: 100%;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      font-size: 16px;
+    }
+
+    button {
+      background-color: #3498db;
+      color: white;
+      border: none;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+
+    button:hover {
+      background-color: #2980b9;
+    }
+
+    .property-card {
+      background: #ecf0f1;
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 10px;
+    }
+
+    .property-card h4 {
+      margin: 0;
+      color: #34495e;
+    }
+
+    .property-card p {
+      margin: 5px 0;
+    }
+
+    #wallet {
+      font-weight: bold;
+      color: #27ae60;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>🏠 Property Marketplace</h2>
+
+    <div class="section">
+      <button onclick="connectWallet()">🔗 Connect Wallet</button>
+      <p id="wallet">Not connected</p>
+    </div>
+
+    <div class="section">
+      <h3>💰 Add Balance</h3>
+      <input type="number" id="amount" placeholder="Enter amount">
+      <button onclick="addBalance()">Add Balance</button>
+    </div>
+
+    <div class="section">
+      <h3>📋 List a Property</h3>
+      <input type="text" id="propName" placeholder="Property Name">
+      <input type="number" id="propPrice" placeholder="Price">
+      <button onclick="listProperty()">List Property</button>
+    </div>
+
+    <div class="section">
+      <h3>🛒 Buy a Property</h3>
+      <input type="number" id="buyId" placeholder="Property ID">
+      <button onclick="buyProperty()">Buy Property</button>
+    </div>
+
+    <div class="section">
+      <h3>🏡 Listed Properties</h3>
+      <div id="propertyList"></div>
+    </div>
+  </div>
+
+  <script>
+    let web3;
+    let contract;
+    const contractAddress = "0x81771eCA4824698B842e5223259aB3E00F2727f6"; 
+    const abi = [
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": false,
+				"internalType": "address",
+				"name": "user",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "newBalance",
+				"type": "uint256"
+			}
+		],
+		"name": "BalanceUpdated",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "id",
+				"type": "uint256"
+			},
+			{
+				"indexed": false,
+				"internalType": "string",
+				"name": "name",
+				"type": "string"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "price",
+				"type": "uint256"
+			},
+			{
+				"indexed": false,
+				"internalType": "address",
+				"name": "owner",
+				"type": "address"
+			}
+		],
+		"name": "PropertyListed",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "id",
+				"type": "uint256"
+			},
+			{
+				"indexed": false,
+				"internalType": "address",
+				"name": "from",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "address",
+				"name": "to",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "price",
+				"type": "uint256"
+			}
+		],
+		"name": "PropertySold",
+		"type": "event"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "amount",
+				"type": "uint256"
+			}
+		],
+		"name": "addBalance",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"name": "balances",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "propertyId",
+				"type": "uint256"
+			}
+		],
+		"name": "buyProperty",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "user",
+				"type": "address"
+			}
+		],
+		"name": "getBalance",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "propertyId",
+				"type": "uint256"
+			}
+		],
+		"name": "getProperty",
+		"outputs": [
+			{
+				"components": [
+					{
+						"internalType": "uint256",
+						"name": "id",
+						"type": "uint256"
+					},
+					{
+						"internalType": "string",
+						"name": "name",
+						"type": "string"
+					},
+					{
+						"internalType": "uint256",
+						"name": "price",
+						"type": "uint256"
+					},
+					{
+						"internalType": "address",
+						"name": "owner",
+						"type": "address"
+					},
+					{
+						"internalType": "bool",
+						"name": "forSale",
+						"type": "bool"
+					}
+				],
+				"internalType": "struct PropertyMarket.Property",
+				"name": "",
+				"type": "tuple"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "string",
+				"name": "name",
+				"type": "string"
+			},
+			{
+				"internalType": "uint256",
+				"name": "price",
+				"type": "uint256"
+			}
+		],
+		"name": "listProperty",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "nextPropertyId",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"name": "properties",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "id",
+				"type": "uint256"
+			},
+			{
+				"internalType": "string",
+				"name": "name",
+				"type": "string"
+			},
+			{
+				"internalType": "uint256",
+				"name": "price",
+				"type": "uint256"
+			},
+			{
+				"internalType": "address",
+				"name": "owner",
+				"type": "address"
+			},
+			{
+				"internalType": "bool",
+				"name": "forSale",
+				"type": "bool"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	}
+]
+
+    async function connectWallet() {
+      if (window.ethereum) {
+        await ethereum.request({ method: 'eth_requestAccounts' });
+        web3 = new Web3(window.ethereum);
+        contract = new web3.eth.Contract(abi, contractAddress);
+        const accounts = await web3.eth.getAccounts();
+        document.getElementById("wallet").innerText = "Connected: " + accounts[0];
+        loadProperties();
+      }
+    }
+
+    async function addBalance() {
+      const amount = document.getElementById("amount").value;
+      const accounts = await web3.eth.getAccounts();
+      await contract.methods.addBalance(amount).send({ from: accounts[0] });
+    }
+
+    async function listProperty() {
+      const name = document.getElementById("propName").value;
+      const price = document.getElementById("propPrice").value;
+      const accounts = await web3.eth.getAccounts();
+      await contract.methods.listProperty(name, price).send({ from: accounts[0] });
+      loadProperties();
+    }
+
+    async function buyProperty() {
+      const id = document.getElementById("buyId").value;
+      const accounts = await web3.eth.getAccounts();
+      await contract.methods.buyProperty(id).send({ from: accounts[0] });
+      loadProperties();
+    }
+
+    async function loadProperties() {
+      const propertyList = document.getElementById("propertyList");
+      propertyList.innerHTML = "";
+      const total = await contract.methods.nextPropertyId().call();
+      for (let i = 1; i < total; i++) {
+        const prop = await contract.methods.getProperty(i).call();
+        const card = document.createElement("div");
+        card.className = "property-card";
+        card.innerHTML = `
+          <h4>${prop.name}</h4>
+          <p>💵 Price: ${prop.price}</p>
+          <p>👤 Owner: ${prop.owner}</p>
+          <p>${prop.forSale ? "✅ For Sale" : "❌ Not for Sale"}</p>
+        `;
+        propertyList.appendChild(card);
+      }
+    }
+  </script>
+</body>
+</html>
