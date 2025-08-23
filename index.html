@@ -58,7 +58,7 @@
     <script>
         let web3 = new Web3(window.ethereum);
         const contractAddress = '0x2338De498D12ff499dc45CFd943e1a5ac06990700x2338De498D12ff499dc45CFd943e1a5ac0699070';
-        const abi = [[
+        const abi = [
 	{
 		"inputs": [
 			{
@@ -98,7 +98,7 @@
 		"stateMutability": "view",
 		"type": "function"
 	}
-]];
+];
 
         const contract = new web3.eth.Contract(abi, contractAddress);
 
