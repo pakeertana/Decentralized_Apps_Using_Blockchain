@@ -16,7 +16,9 @@ I explored how smart contracts work, deployed them to the **Sepolia test network
 
 ## Project Structure
 - `storage.sol` → a simple storage contract for learning.  
-- `bank.sol` → a basic banking contract to understand deposits/withdrawals.  
+- `bank.sol` → a basic banking contract to understand deposits/withdrawals.
+- `property.sol` → a basic property contract to understand the property availabity and buying.
+- `voting.sol` → a basic voting contract to understand the list of candidates and number of votes earned by them.
 - `bank/` → frontend folder containing `index.html` to interact with contracts.  
 - `contract_frontend/` → setup with Node.js (package.json, lock file).  
 - `artifacts/` → auto-generated build files from contract compilation.  
